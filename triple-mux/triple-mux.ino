@@ -29,10 +29,11 @@
 // ----- I2C Addresses -----
 const uint8_t TCA9548A_MUX1_ADDR = 0x70;
 const uint8_t TCA9548A_MUX2_ADDR = 0x71;
+const uint8_t TCA9548A_MUX3_ADDR = 0x72;
 const uint8_t RFID2_WS1850S_ADDR = 0x28;
 
 // ----- System Configuration -----
-const uint8_t NUM_BATTERIES = 2;
+const uint8_t NUM_BATTERIES = 3;
 const uint8_t POSITIVE_TERMINAL_CHANNEL = 1;  // Channel for + terminal on battery
 const uint8_t NEGATIVE_TERMINAL_CHANNEL = 2;  // Channel for - terminal on battery
 
@@ -53,6 +54,7 @@ struct Battery {
 Battery batteries[NUM_BATTERIES] = {
   { TCA9548A_MUX1_ADDR, "Battery 1", false, false },
   { TCA9548A_MUX2_ADDR, "Battery 2", false, false },
+  { TCA9548A_MUX3_ADDR, "Battery 3", false, false },
 };
 
 // RFID driver and reader instance
@@ -86,6 +88,10 @@ void TCA9548A_disableAll() {
   Wire.endTransmission();
   delay(10);
   Wire.beginTransmission(TCA9548A_MUX2_ADDR);
+  Wire.write(0);
+  Wire.endTransmission();
+  delay(10);
+  Wire.beginTransmission(TCA9548A_MUX3_ADDR);
   Wire.write(0);
   Wire.endTransmission();
 }
