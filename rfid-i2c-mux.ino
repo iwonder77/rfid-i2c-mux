@@ -15,12 +15,8 @@
 *     connected straight to the TCA9548A multiplexer's output channels (SD1/SC1 and SD2/SC2) without the use of an external pull up resistor
 *   - Also found out that the SDA/SCL lines for the RFID2 readers are at 3.3V logic level, so the multiplexer was powered with Arduino's
 *     3V3/GND pins
-*
-*     * Notes:
-*   - RFID2 boards have internal pull-up resistors for SDA/SCL lines
-*   - SDA/SCL lines operate at 3.3V logic level
 *   - Readers connected to TCA9548A channels 1 and 2
-*   - Version checking bypassed due to WS1850S/MFRC522 differences
+*   - Version checking of RFID2 reader bypassed due to WS1850S/MFRC522 differences
 * ----------------------------------------------
 */
 
@@ -37,10 +33,11 @@ const uint8_t RFID2_WS1850S_ADDR = 0x28;
 const uint8_t READER1_CHANNEL = 1;
 const uint8_t READER2_CHANNEL = 2;
 
-// single driver and reader instance
+// RFID driver and reader instance
 MFRC522DriverI2C driver{ RFID2_WS1850S_ADDR, Wire };
 MFRC522 reader{ driver };
 
+// ---------- MUX SET CHANNEL ----------
 void TCA9548A_setChannel(uint8_t channel) {
   if (channel > 7) return;
 
@@ -49,14 +46,15 @@ void TCA9548A_setChannel(uint8_t channel) {
   Wire.endTransmission();
 }
 
+// ---------- MUX DISABLE ALL CHANNELS ----------
 void TCA9548A_disable() {
   Wire.beginTransmission(TCA9548A_ADDR);
   Wire.write(0);
   Wire.endTransmission();
 }
 
-// Test if reader can detect cards (bypasses version checking)
-bool testReaderFunctionality(uint8_t channel, const char* readerName) {
+// ---------- RFID READER TEST ----------
+bool testReaderI2CCommunication(uint8_t channel, const char* readerName) {
   Serial.print("Testing ");
   Serial.print(readerName);
   Serial.print(" functionality...");
@@ -64,11 +62,11 @@ bool testReaderFunctionality(uint8_t channel, const char* readerName) {
   TCA9548A_setChannel(channel);
   delay(50);
 
-  // Initialize without checking version
+  // initialize reader
   reader.PCD_Init();
   delay(100);
 
-  // Test basic I2C communication
+  // test basic I2C communication
   Wire.beginTransmission(RFID2_WS1850S_ADDR);
   if (Wire.endTransmission() != 0) {
     Serial.println(" I2C FAILED");
@@ -79,6 +77,7 @@ bool testReaderFunctionality(uint8_t channel, const char* readerName) {
   return true;
 }
 
+// ---------- MAIN RFID INITIALIZER ----------
 bool initializeReader(uint8_t channel, const char* readerName) {
   Serial.print("Initializing ");
   Serial.print(readerName);
@@ -86,7 +85,7 @@ bool initializeReader(uint8_t channel, const char* readerName) {
   Serial.print(channel);
   Serial.print(")...");
 
-  if (!testReaderFunctionality(channel, readerName)) {
+  if (!testReaderI2CCommunication(channel, readerName)) {
     Serial.println(" FAILED");
     return false;
   }
@@ -99,12 +98,14 @@ bool initializeReader(uint8_t channel, const char* readerName) {
   return true;
 }
 
+// ---------- CARD CHECKING BOOLEAN ----------
 bool checkForCard(uint8_t channel) {
   TCA9548A_setChannel(channel);
   delay(5);
   return (reader.PICC_IsNewCardPresent() && reader.PICC_ReadCardSerial());
 }
 
+// ---------- PROCESS CARD INFORMATION ----------
 void processCard(uint8_t channel, const char* readerName) {
   TCA9548A_setChannel(channel);
 
@@ -141,22 +142,21 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
 
-  Serial.println("=== TCA9548A RFID Reader - Working Version ===");
-  Serial.println("Version checking bypassed for WS1850S compatibility\n");
+  Serial.println("=== TCA9548A RFID Reader ===");
 
   Wire.begin();
 
-  // Disable all channels initially
+  // disable all channels initially
   TCA9548A_disable();
   delay(100);
 
-  // Initialize both readers (no version checking)
+  // initialize both readers (no version checking)
   bool reader1_ok = initializeReader(READER1_CHANNEL, "Reader 1");
   bool reader2_ok = initializeReader(READER2_CHANNEL, "Reader 2");
 
-  Serial.print("\nInitialization complete: Reader1=");
+  Serial.print("\nInitialization complete: Reader 1=");
   Serial.print(reader1_ok ? "OK" : "FAILED");
-  Serial.print(", Reader2=");
+  Serial.print(", Reader 2=");
   Serial.println(reader2_ok ? "OK" : "FAILED");
 
   if (!reader1_ok && !reader2_ok) {
@@ -164,7 +164,7 @@ void setup() {
     while (1) delay(1000);
   }
 
-  // Show some basic info (without version details that don't work)
+  // show some basic info (without version details that don't work)
   if (reader1_ok) {
     Serial.println("\nReader 1 ready for card detection");
   }
@@ -183,13 +183,13 @@ void loop() {
   // Check Reader 1
   if (checkForCard(READER1_CHANNEL)) {
     processCard(READER1_CHANNEL, "Reader 1");
-    delay(1000);  // Prevent spam detection
+    delay(100);  // Prevent spam detection
   }
 
   // Check Reader 2
   if (checkForCard(READER2_CHANNEL)) {
     processCard(READER2_CHANNEL, "Reader 2");
-    delay(1000);  // Prevent spam detection
+    delay(100);  // Prevent spam detection
   }
 
   delay(100);
