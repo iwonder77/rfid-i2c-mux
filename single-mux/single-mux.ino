@@ -30,8 +30,8 @@ const uint8_t TCA9548A_ADDR = 0x70;
 const uint8_t RFID2_WS1850S_ADDR = 0x28;
 
 // ----- TCA9548A Channels -----
-const uint8_t READER1_CHANNEL = 1;
-const uint8_t READER2_CHANNEL = 2;
+const uint8_t NEGATIVE_TERMINAL_CHANNEL = 0;  // Channel for - terminal reader on battery
+const uint8_t POSITIVE_TERMINAL_CHANNEL = 1;  // Channel for + terminal reader on battery
 
 // RFID driver and reader instance
 MFRC522DriverI2C driver{ RFID2_WS1850S_ADDR, Wire };
@@ -151,8 +151,8 @@ void setup() {
   delay(100);
 
   // initialize both readers (no version checking)
-  bool reader1_ok = initializeReader(READER1_CHANNEL, "Reader 1");
-  bool reader2_ok = initializeReader(READER2_CHANNEL, "Reader 2");
+  bool reader1_ok = initializeReader(POSITIVE_TERMINAL_CHANNEL, "Reader 1");
+  bool reader2_ok = initializeReader(NEGATIVE_TERMINAL_CHANNEL, "Reader 2");
 
   Serial.print("\nInitialization complete: Reader 1=");
   Serial.print(reader1_ok ? "OK" : "FAILED");
@@ -181,14 +181,14 @@ void setup() {
 
 void loop() {
   // Check Reader 1
-  if (checkForCard(READER1_CHANNEL)) {
-    processCard(READER1_CHANNEL, "Reader 1");
+  if (checkForCard(POSITIVE_TERMINAL_CHANNEL)) {
+    processCard(POSITIVE_TERMINAL_CHANNEL, "Reader 1");
     delay(100);  // Prevent spam detection
   }
 
   // Check Reader 2
-  if (checkForCard(READER2_CHANNEL)) {
-    processCard(READER2_CHANNEL, "Reader 2");
+  if (checkForCard(NEGATIVE_TERMINAL_CHANNEL)) {
+    processCard(NEGATIVE_TERMINAL_CHANNEL, "Reader 2");
     delay(100);  // Prevent spam detection
   }
 
