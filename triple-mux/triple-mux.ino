@@ -96,11 +96,6 @@ void TCA9548A_disableAll() {
   Wire.endTransmission();
 }
 
-// ---------- RESET READER'S TAG DATA ----------
-void clearTagData(TerminalReader& terminal) {
-  terminal.isTagPresent = false;
-}
-
 // ---------- RFID READER TEST ----------
 bool testReaderI2CCommunication(uint8_t muxAddress, uint8_t channel, const char* readerName) {
   Serial.print("Testing ");
