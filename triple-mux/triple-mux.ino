@@ -32,15 +32,10 @@ const uint8_t TCA9548A_MUX2_ADDR = 0x71;
 const uint8_t TCA9548A_MUX3_ADDR = 0x72;
 const uint8_t RFID2_WS1850S_ADDR = 0x28;
 
-// ----- System Configuration -----
-const uint8_t NUM_BATTERIES = 3;
-const uint8_t POSITIVE_TERMINAL_CHANNEL = 1;  // Channel for + terminal on battery
-const uint8_t NEGATIVE_TERMINAL_CHANNEL = 2;  // Channel for - terminal on battery
-
 // ----- TCA9548A Channels -----
-const uint8_t READER1_CHANNEL = 1;
-const uint8_t READER2_CHANNEL = 2;
-
+const uint8_t NUM_BATTERIES = 3;
+const uint8_t NEGATIVE_TERMINAL_CHANNEL = 0;  // Channel for - terminal on battery
+const uint8_t POSITIVE_TERMINAL_CHANNEL = 1;  // Channel for + terminal on battery
 
 // ----- BATTERY CONFIGURATION STRUCTURE -----
 struct Battery {
@@ -96,52 +91,6 @@ void TCA9548A_disableAll() {
   Wire.endTransmission();
 }
 
-// ---------- RFID READER TEST ----------
-bool testReaderI2CCommunication(uint8_t muxAddress, uint8_t channel, const char* readerName) {
-  Serial.print("Testing ");
-  Serial.print(readerName);
-  Serial.print(" functionality on MUX Ox");
-  Serial.print(muxAddress, HEX);
-  Serial.print(":");
-
-  TCA9548A_setChannel(muxAddress, channel);
-  delay(50);
-
-  // initialize reader
-  reader.PCD_Init();
-  delay(100);
-
-  // test basic I2C communication
-  Wire.beginTransmission(RFID2_WS1850S_ADDR);
-  byte result = Wire.endTransmission();
-
-  if (result != 0) {
-    Serial.print(readerName);
-    Serial.println(" - I2C Communication FAILED");
-    return false;
-  }
-
-  Serial.print(readerName);
-  Serial.println(" - I2C OK");
-  return true;
-}
-
-// ---------- RFID READER INITIALIZATION ----------
-bool initializeReader(uint8_t muxAddress, uint8_t channel, const char* readerName) {
-  if (!testReaderI2CCommunication(muxAddress, channel, readerName)) {
-    Serial.println("INITIALIZATION FAILED");
-    return false;
-  }
-
-  TCA9548A_setChannel(muxAddress, channel);
-  reader.PCD_Init();
-  delay(100);
-
-  Serial.print(readerName);
-  Serial.println(" - Initialization SUCCESS");
-  return true;
-}
-
 // ---------- CARD DETECTION ----------
 bool checkForCard(uint8_t muxAddress, uint8_t channel) {
   TCA9548A_setChannel(muxAddress, channel);
@@ -182,6 +131,48 @@ void processCard(uint8_t muxAddress, uint8_t channel, const char* location) {
   reader.PCD_StopCrypto1();
 
   Serial.println("----------");
+}
+
+// ---------- RFID READER TEST ----------
+bool testReaderI2CCommunication(uint8_t muxAddress, uint8_t channel, const char* readerName) {
+  Serial.print("Testing ");
+  Serial.print(readerName);
+  Serial.print(" functionality on MUX Ox");
+  Serial.print(muxAddress, HEX);
+  Serial.print(":");
+
+  TCA9548A_setChannel(muxAddress, channel);
+  delay(50);
+
+  // initialize reader
+  reader.PCD_Init();
+  delay(100);
+
+  // test basic I2C communication
+  Wire.beginTransmission(RFID2_WS1850S_ADDR);
+  byte result = Wire.endTransmission();
+
+  if (result != 0) {
+    Serial.print(readerName);
+    Serial.println(" - I2C Communication FAILED");
+    return false;
+  }
+
+  Serial.print(readerName);
+  Serial.println(" - I2C OK");
+  return true;
+}
+
+// ---------- RFID READER INITIALIZATION ----------
+bool initializeReader(uint8_t muxAddress, uint8_t channel, const char* readerName) {
+  if (!testReaderI2CCommunication(muxAddress, channel, readerName)) {
+    Serial.println("INITIALIZATION FAILED");
+    return false;
+  }
+
+  Serial.print(readerName);
+  Serial.println(" - Initialization SUCCESS");
+  return true;
 }
 
 // ---------- INITIALIZE OUR SYSTEM ----------
