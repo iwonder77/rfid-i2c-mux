@@ -11,13 +11,13 @@
 *
 * Notes: 
 *   - The RFID2 readers used have a WS1850S chip rather than the MFRC522, so there are subtle differences that the library
-*     doesn't play nice with, however reading the datasheet for the MFRC522 and the src code for the library seems to help and work out alright
-*       sidenote: coudln't for the life of me figure out how to download the datasheet for these RFID readers from M5Stack, 
-*       definitely will go with other options if we use RFID again
+*     doesn't play nice with, however reading the datasheet for the MFRC522 seems to work alright
 *   - Found through trial and error that the RFID2 boards have internal pull-up resistors for the SDA/SCL lines. So these were 
 *     connected straight to the TCA9548A multiplexer's output channels (SD1/SC1 and SD2/SC2) without the use of an external pull up resistor
 *   - Also found out that the SDA/SCL lines for the RFID2 readers are at 3.3V logic level, so the multiplexer was powered with Arduino's
 *     3V3/GND pins
+*   - Readers connected to TCA9548A channels 1 and 2
+*   - Version checking of RFID2 reader bypassed due to WS1850S/MFRC522 differences
 * ----------------------------------------------
 */
 
@@ -39,7 +39,6 @@ enum TagState {
   TAG_REMOVED
 };
 
-// ===================== CONSTANTS ====================
 // ----- I2C Addresses -----
 const uint8_t TCA9548A_ADDR = 0x70;
 const uint8_t RFID2_WS1850S_ADDR = 0x28;
@@ -58,15 +57,13 @@ const unsigned long TAG_ABSENCE_TIMEOUT = 1000;  // time before considering tag 
 const unsigned long TAG_DEBOUNCE_TIME = 100;     // debounce time for tag detection (ms)
 const uint8_t TAG_PRESENCE_THRESHOLD = 3;        // consecutive reading fails before marking absent
 
-const uint8_t TAG_START_READ_PAGE = 4;
-// ====================================================
-
-// ===================== HARDWARE INSTANCES ====================
-MFRC522DriverI2C driver{ RFID2_WS1850S_ADDR, Wire };  // // RFID driver and reader instance
+// RFID driver and reader instance
+MFRC522DriverI2C driver{ RFID2_WS1850S_ADDR, Wire };
 MFRC522 reader{ driver };
-// =============================================================
 
-// ===================== DATA STRUCTURES ====================
+const uint8_t TAG_START_READ_PAGE = 4;
+
+// ----- DATA STRUCTURES -----
 struct JumperCableTagData {
   char type[4];      // either "POS" or "NEG"
   uint8_t id;        // 1, 2, 3, or 4 (for the 4 cable ends)
@@ -134,8 +131,6 @@ Battery battery = {
     {},
     0 },
 };
-// =========================================================
-
 
 // ========== MUX FUNCTIONS ==========
 void TCA9548A_setChannel(uint8_t channel) {
